@@ -1,4 +1,6 @@
 import os
+import shutil
+
 from llama_index.core import (
     VectorStoreIndex,
     SimpleDirectoryReader,
