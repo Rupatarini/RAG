@@ -21,14 +21,11 @@ CORS(
 # Logging
 # -------------------------------
 if os.getenv("FLASK_ENV") == "production":
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.INFO)
-    app.logger.addHandler(handler)
+    logging.basicConfig(level=logging.INFO)
 
 # -------------------------------
-# Routes
+# Health
 # -------------------------------
-
 @app.route("/", methods=["GET"])
 def health():
     return jsonify({
@@ -36,8 +33,16 @@ def health():
         "model": LLM_MODEL_NAME
     })
 
+# -------------------------------
+# Upload PDF / TXT
+# -------------------------------
 @app.route("/upload", methods=["POST"])
 def upload_file():
+    session_id = request.headers.get("X-Session-ID")
+
+    if not session_id:
+        return jsonify({"error": "Session ID missing"}), 400
+
     if "file" not in request.files:
         return jsonify({"error": "No file"}), 400
 
@@ -50,36 +55,50 @@ def upload_file():
     file.save(filepath)
 
     try:
-        chunks = add_documents(filepath)
+        chunks = add_documents(filepath, session_id)
         os.remove(filepath)
-        return jsonify({"chunks_indexed": chunks})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
+        return jsonify({
+            "chunks_indexed": chunks,
+            "session_id": session_id
+        })
+
+    except Exception:
+        app.logger.exception("UPLOAD failed")
+        return jsonify({"error": "Upload failed"}), 500
+
+# -------------------------------
+# Ask Question
+# -------------------------------
 @app.route("/ask", methods=["POST"])
 def ask():
+    session_id = request.headers.get("X-Session-ID")
+
+    if not session_id:
+        return jsonify({"error": "Session ID missing"}), 400
+
+    data = request.get_json(silent=True)
+    question = data.get("question") if data else None
+
+    if not question:
+        return jsonify({"error": "No question provided"}), 400
+
     try:
-        data = request.get_json()
-        question = data.get("question") if data else None
-
-        if not question:
-            return jsonify({"error": "No question provided"}), 400
-
-        answer, sources = query_index(question)
+        answer, sources = query_index(question, session_id)
 
         return jsonify({
             "answer": answer,
             "sources": sources
         })
 
-    except Exception as e:
+    except Exception:
         app.logger.exception("ASK endpoint failed")
         return jsonify({
             "error": "Internal error while answering the question"
         }), 500
 
 # -------------------------------
-# Local run (Gunicorn ignores)
+# Local Dev (Gunicorn ignores)
 # -------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=7860)
