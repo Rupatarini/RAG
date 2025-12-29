@@ -11,7 +11,7 @@ from llama_index.core.storage.storage_context import StorageContext
 # CORRECT GOOGLE INTEGRATIONS
 # -------------------------------
 from llama_index.llms.google_genai import GoogleGenAI
-from llama_index.embeddings.google import GoogleEmbedding
+from llama_index.embeddings.google.base import GoogleEmbedding  # ✅ FIX
 
 from .chunker import get_text_from_file
 from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
@@ -30,7 +30,7 @@ def configure_llama_index_settings():
         api_key=os.getenv("GEMINI_API_KEY")
     )
 
-    # Gemini Embeddings (FIXED)
+    # Gemini Embeddings
     Settings.embed_model = GoogleEmbedding(
         model=EMBEDDING_MODEL_NAME,
         api_key=os.getenv("GEMINI_API_KEY")
