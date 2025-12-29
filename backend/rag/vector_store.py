@@ -1,27 +1,43 @@
 import os
 import shutil
+from typing import Tuple, List
 
 from llama_index.core import (
     VectorStoreIndex,
-    SimpleDirectoryReader,
     Settings,
-    load_index_from_storage,
 )
-from llama_index.core.storage.storage_context import StorageContext
+from llama_index.core.schema import NodeWithScore
 
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 
 from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
 
-# -------------------------------
-# GLOBAL CONFIG (RUN ON STARTUP)
-# -------------------------------
+# ============================================================
+# GLOBAL SINGLETON INDEX (IMPORTANT)
+# ============================================================
 
-def configure_llama_index_settings():
+_INDEX: VectorStoreIndex | None = None
+
+
+# ============================================================
+# CLEAR VECTOR STORE ON APP START
+# ============================================================
+
+if os.path.exists(VECTOR_STORE_PATH):
+    shutil.rmtree(VECTOR_STORE_PATH)
+
+os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
+
+
+# ============================================================
+# CONFIGURE LLAMAINDEX (ONCE)
+# ============================================================
+
+def configure_llama_index():
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY is missing")
+        raise RuntimeError("GEMINI_API_KEY missing")
 
     Settings.llm = GoogleGenAI(
         model=LLM_MODEL_NAME,
@@ -33,54 +49,52 @@ def configure_llama_index_settings():
         api_key=api_key
     )
 
-configure_llama_index_settings()
 
-# -------------------------------
-def get_index():
-    os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
+configure_llama_index()
 
-    # Load existing index if present
-    if os.listdir(VECTOR_STORE_PATH):
-        storage_context = StorageContext.from_defaults(
-            persist_dir=VECTOR_STORE_PATH
-        )
-        return load_index_from_storage(storage_context)
 
-    # Otherwise create new index
-    return VectorStoreIndex(
-        [],
-        storage_context=StorageContext.from_defaults()
-    )
+# ============================================================
+# GET OR CREATE INDEX (SINGLE INSTANCE)
+# ============================================================
 
-# -------------------------------
+def get_index() -> VectorStoreIndex:
+    global _INDEX
+
+    if _INDEX is None:
+        _INDEX = VectorStoreIndex([])
+
+    return _INDEX
+
+
+# ============================================================
 # ADD DOCUMENTS
-# -------------------------------
+# ============================================================
 
-def add_documents(filepath):
-    documents = SimpleDirectoryReader(
+def add_documents(filepath: str) -> int:
+    from llama_index.core import SimpleDirectoryReader
+
+    index = get_index()
+
+    docs = SimpleDirectoryReader(
         input_files=[filepath]
     ).load_data()
 
+    index.insert_nodes(docs)
+
+    return len(docs)
+
+
+# ============================================================
+# QUERY
+# ============================================================
+
+def query_index(question: str) -> Tuple[str, List[dict]]:
     index = get_index()
 
-    for doc in documents:
-        index.insert(doc)
-
-    index.storage_context.persist(persist_dir=VECTOR_STORE_PATH)
-    return len(documents)
-
-# -------------------------------
-# QUERY INDEX
-# -------------------------------
-
-def query_index(question):
-    index = get_index()
-
-    # 🔴 Prevent querying empty index
-    if index is None or len(index.docstore.docs) == 0:
+    if len(index.docstore.docs) == 0:
         return "No documents indexed yet. Please upload a document first.", []
 
-    query_engine = index.as_query_engine()
+    query_engine = index.as_query_engine(similarity_top_k=5)
     response = query_engine.query(question)
 
     sources = []
@@ -91,4 +105,3 @@ def query_index(question):
             })
 
     return str(response), sources
-
