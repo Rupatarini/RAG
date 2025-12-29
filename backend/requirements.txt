@@ -6,7 +6,7 @@ pypdf
 sentence-transformers
 python-dotenv
 
-llama-index
-llama-index-readers-file
-llama-index-embeddings-google
-llama-index-llms-google-genai
+llama-index==0.10.68
+llama-index-readers-file==0.1.33
+llama-index-llms-google-genai==0.1.6
+llama-index-embeddings-google==0.1.6
