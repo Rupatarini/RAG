@@ -83,6 +83,10 @@ def add_documents(filepath):
 def query_index(question):
     index = get_index()
 
+    # 🔴 Prevent querying empty index
+    if index is None or len(index.docstore.docs) == 0:
+        return "No documents indexed yet. Please upload a document first.", []
+
     query_engine = index.as_query_engine()
     response = query_engine.query(question)
 
@@ -94,3 +98,4 @@ def query_index(question):
             })
 
     return str(response), sources
+
