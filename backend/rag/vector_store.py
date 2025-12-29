@@ -7,11 +7,9 @@ from llama_index.core import (
 )
 from llama_index.core.storage.storage_context import StorageContext
 
-# -------------------------------
-# CORRECT GOOGLE INTEGRATIONS
-# -------------------------------
 from llama_index.llms.google_genai import GoogleGenAI
-from llama_index.embeddings.google.base import GoogleEmbedding  # ✅ FIX
+from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
+
 
 from .chunker import get_text_from_file
 from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
