@@ -36,28 +36,17 @@ configure_llama_index_settings()
 # -------------------------------
 # INDEX MANAGEMENT
 # -------------------------------
-
 def get_index():
+    # 🔴 FORCE RESET ON FIRST BOOT (REMOVE AFTER SUCCESS)
+    if os.path.exists(VECTOR_STORE_PATH):
+        shutil.rmtree(VECTOR_STORE_PATH)
+
     os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
 
-    if not os.listdir(VECTOR_STORE_PATH):
-        return VectorStoreIndex(
-            [],
-            storage_context=StorageContext.from_defaults()
-        )
-
-    try:
-        storage_context = StorageContext.from_defaults(
-            persist_dir=VECTOR_STORE_PATH
-        )
-        return load_index_from_storage(storage_context)
-
-    except Exception as e:
-        print(f"Index load failed: {e}")
-        return VectorStoreIndex(
-            [],
-            storage_context=StorageContext.from_defaults()
-        )
+    return VectorStoreIndex(
+        [],
+        storage_context=StorageContext.from_defaults()
+    )
 
 # -------------------------------
 # ADD DOCUMENTS
