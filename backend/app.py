@@ -58,16 +58,25 @@ def upload_file():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    data = request.get_json()
-    question = data.get("question")
-    if not question:
-        return jsonify({"error": "No question"}), 400
+    try:
+        data = request.get_json()
+        question = data.get("question") if data else None
 
-    answer, sources = query_index(question)
-    return jsonify({
-        "answer": answer,
-        "sources": sources
-    })
+        if not question:
+            return jsonify({"error": "No question provided"}), 400
+
+        answer, sources = query_index(question)
+
+        return jsonify({
+            "answer": answer,
+            "sources": sources
+        })
+
+    except Exception as e:
+        app.logger.exception("ASK endpoint failed")
+        return jsonify({
+            "error": "Internal error while answering the question"
+        }), 500
 
 # -------------------------------
 # Local run (Gunicorn ignores)
