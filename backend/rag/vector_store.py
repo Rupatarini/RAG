@@ -1,16 +1,21 @@
 import os
-from llama_index.core import VectorStoreIndex, SimpleDirectoryReader, Settings
+from llama_index.core import (
+    VectorStoreIndex,
+    SimpleDirectoryReader,
+    Settings,
+    load_index_from_storage,
+)
 from llama_index.core.storage.storage_context import StorageContext
+
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 
 from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
 
-
 # -------------------------------
-# GLOBAL LLM CONFIG (ONCE)
+# Global LlamaIndex config
 # -------------------------------
-def configure():
+def configure_llama_index_settings():
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY missing")
@@ -25,65 +30,81 @@ def configure():
         api_key=api_key
     )
 
-configure()
-
+configure_llama_index_settings()
 
 # -------------------------------
-# SESSION INDEX HANDLING
+# Helpers
 # -------------------------------
-def get_index(session_id: str):
-    session_path = os.path.join(VECTOR_STORE_PATH, session_id)
-    os.makedirs(session_path, exist_ok=True)
+def _session_path(session_id: str) -> str:
+    return os.path.join(VECTOR_STORE_PATH, session_id)
 
-    if os.listdir(session_path):
-        storage_context = StorageContext.from_defaults(
-            persist_dir=session_path
-        )
-        return VectorStoreIndex.load_from_storage(storage_context)
-
-    return VectorStoreIndex(
-        [],
-        storage_context=StorageContext.from_defaults(
-            persist_dir=session_path
-        )
+def _index_exists(path: str) -> bool:
+    return (
+        os.path.exists(path) and
+        os.path.isfile(os.path.join(path, "docstore.json"))
     )
 
+# -------------------------------
+# Index loader / creator
+# -------------------------------
+def get_index(session_id: str) -> VectorStoreIndex:
+    session_dir = _session_path(session_id)
+    os.makedirs(session_dir, exist_ok=True)
+
+    # ✅ Load existing index
+    if _index_exists(session_dir):
+        storage_context = StorageContext.from_defaults(
+            persist_dir=session_dir
+        )
+        return load_index_from_storage(storage_context)
+
+    # ✅ Create new empty index
+    storage_context = StorageContext.from_defaults()
+    index = VectorStoreIndex([], storage_context=storage_context)
+    index.storage_context.persist(persist_dir=session_dir)
+    return index
 
 # -------------------------------
-# ADD DOCUMENTS
+# Add documents
 # -------------------------------
-def add_documents(filepath: str, session_id: str):
-    docs = SimpleDirectoryReader(
+def add_documents(filepath: str, session_id: str) -> int:
+    documents = SimpleDirectoryReader(
         input_files=[filepath]
     ).load_data()
 
     index = get_index(session_id)
 
-    for doc in docs:
+    for doc in documents:
         index.insert(doc)
 
-    index.storage_context.persist()
-    return len(docs)
+    index.storage_context.persist(
+        persist_dir=_session_path(session_id)
+    )
 
+    return len(documents)
 
 # -------------------------------
-# QUERY
+# Query index
 # -------------------------------
 def query_index(question: str, session_id: str):
+    session_dir = _session_path(session_id)
+
+    # 🔒 Ask before upload protection
+    if not _index_exists(session_dir):
+        return (
+            "Please upload at least one document before asking questions.",
+            []
+        )
+
     index = get_index(session_id)
-
-    if not index.docstore.docs:
-        return "No documents uploaded yet.", []
-
     query_engine = index.as_query_engine()
     response = query_engine.query(question)
 
     sources = []
-    for node in getattr(response, "source_nodes", []):
-        sources.append({
-            "metadata": {
+    if hasattr(response, "source_nodes"):
+        for node in response.source_nodes:
+            sources.append({
                 "filename": node.metadata.get("filename", "Unknown")
-            }
-        })
+            })
 
     return str(response), sources
