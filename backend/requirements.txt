@@ -6,8 +6,7 @@ pypdf
 sentence-transformers
 python-dotenv
 
-# ---- LlamaIndex (single generation, resolver-safe) ----
 llama-index==0.12.24
 llama-index-readers-file==0.4.0
 llama-index-llms-google-genai==0.2.0
-llama-index-embeddings-google==0.2.0
+llama-index-embeddings-google-genai==0.2.0
