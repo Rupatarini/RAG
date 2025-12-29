@@ -36,15 +36,17 @@ def configure_llama_index_settings():
 configure_llama_index_settings()
 
 # -------------------------------
-# INDEX MANAGEMENT
-# -------------------------------
 def get_index():
-    # 🔴 FORCE RESET ON FIRST BOOT (REMOVE AFTER SUCCESS)
-    if os.path.exists(VECTOR_STORE_PATH):
-        shutil.rmtree(VECTOR_STORE_PATH)
-
     os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
 
+    # Load existing index if present
+    if os.listdir(VECTOR_STORE_PATH):
+        storage_context = StorageContext.from_defaults(
+            persist_dir=VECTOR_STORE_PATH
+        )
+        return load_index_from_storage(storage_context)
+
+    # Otherwise create new index
     return VectorStoreIndex(
         [],
         storage_context=StorageContext.from_defaults()
