@@ -19,7 +19,6 @@ os.makedirs(VECTOR_STORE_PATH, exist_ok=True)
 
 # -------------------------------
 # Model configuration
-# (Read from HF Secrets / Variables)
 # -------------------------------
 EMBEDDING_MODEL_NAME = os.getenv(
     "EMBEDDING_MODEL_NAME",
