@@ -10,8 +10,6 @@ from llama_index.core.storage.storage_context import StorageContext
 from llama_index.llms.google_genai import GoogleGenAI
 from llama_index.embeddings.google_genai import GoogleGenAIEmbedding
 
-
-from .chunker import get_text_from_file
 from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
 
 # -------------------------------
@@ -19,19 +17,18 @@ from ..config import VECTOR_STORE_PATH, LLM_MODEL_NAME, EMBEDDING_MODEL_NAME
 # -------------------------------
 
 def configure_llama_index_settings():
-    if not os.getenv("GEMINI_API_KEY"):
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
         raise RuntimeError("GEMINI_API_KEY is missing")
 
-    # Gemini LLM
     Settings.llm = GoogleGenAI(
         model=LLM_MODEL_NAME,
-        api_key=os.getenv("GEMINI_API_KEY")
+        api_key=api_key
     )
 
-    # Gemini Embeddings
-    Settings.embed_model = GoogleEmbedding(
+    Settings.embed_model = GoogleGenAIEmbedding(
         model=EMBEDDING_MODEL_NAME,
-        api_key=os.getenv("GEMINI_API_KEY")
+        api_key=api_key
     )
 
 configure_llama_index_settings()
