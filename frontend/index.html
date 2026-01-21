@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RAG Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <div class="app">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="brand">
+                    <div class="logo-mark">R</div>
+                    <div class="brand-text">
+                        <h1>RAG Chat</h1>
+                        <p>Ask questions based on your documents</p>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <button id="new-chat-btn" class="new-chat-btn">+ New Chat</button>
+
+                    <form id="upload-form" class="upload-form">
+                        <label for="file-input" class="upload-label">
+                            <span class="upload-icon">📄</span>
+                            <span>Choose file</span>
+                        </label>
+                        <input type="file" id="file-input" accept=".pdf,.txt" hidden />
+                        <button type="submit" class="upload-btn">Upload</button>
+                        <span id="upload-status" class="upload-status"></span>
+                    </form>
+                </div>
+            </header>
+
+            <!-- Chat -->
+            <main class="chat-container">
+                <div id="chat-messages" class="chat-messages"></div>
+            </main>
+
+            <!-- Input -->
+            <footer class="input-area">
+                <form id="chat-form" class="input-form">
+                    <textarea
+                        id="question"
+                        rows="1"
+                        placeholder="Send a message..."
+                        class="input-box"
+                    ></textarea>
+                    <button type="submit" id="ask-btn" class="send-btn">
+                        ➤
+                    </button>
+                </form>
+                <p class="hint-text">
+                    RAG App · Answers are generated from your uploaded documents.
+                </p>
+            </footer>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
