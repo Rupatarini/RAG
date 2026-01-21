@@ -1,4 +1,4 @@
-const API_BASE = "https://vamsi1103-rag-backend.hf.space";
+const API_BASE = "https://rupatarini-rag.hf.space";
 
 /* -------------------------------
    SESSION HANDLING (CRITICAL)
@@ -218,3 +218,4 @@ newChatBtn.addEventListener("click", () => {
    INIT
 --------------------------------*/
 addWelcomeMessage();
+
