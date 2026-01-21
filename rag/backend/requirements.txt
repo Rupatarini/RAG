@@ -1,0 +1,14 @@
+
+Flask-CORS
+pypdf
+sentence-transformers
+python-dotenv
+google-genai
+llama-index
+llama-index-readers-file
+llama-index-embeddings-google
+
+llama-index-llms-google-genai  # <--- NEW REQUIRED PACKAGE
+flask
+gunicorn
+
